@@ -71,28 +71,113 @@ class LinkedList{
 
     return false;
   }
+
+  getKeys(){
+    let arrKeys = []
+    if (this.head === null) {
+      return null;
+    }
+    else{
+      let temp = this.head;
+      while(temp!=null){
+        arrKeys.push(temp.key);
+        temp = temp.next;
+      }
+    }
+    return arrKeys;
+  }
+
+  getValues(){
+    let arrValues = []
+    if (this.head === null) {
+      return null;
+    }
+    else{
+      let temp = this.head;
+      while(temp!=null){
+        arrValues.push(temp.value);
+        temp = temp.next;
+      }
+    }
+    return arrValues;
+  }
+
+  getAll(){
+    let arrValues = []
+    if (this.head === null) {
+      return null;
+    }
+    else{
+      let temp = this.head;
+      while(temp!=null){
+        arrValues.push([temp.key, temp.value]);
+        temp = temp.next;
+      }
+    }
+    return arrValues;
+  }
 }
 class HashMap{
-  constructor(bucketSize){
-    this.bucketSize = bucketSize;
-    this.buckets = new Array(bucketSize).map(() => new LinkedList());
+  constructor(initialCapacity, loadFactor){
+    this.capacity = initialCapacity; 
+    this.loadFactor = loadFactor;  
+    this.buckets = new Array(initialCapacity).fill().map(() => new LinkedList());
+    this.size = 0;                  
+    this.threshold = Math.floor(initialCapacity * loadFactor); 
   }
 
   hash(key) {
-      let hashCode = 0;
-           
-      const primeNumber = 31;
-      for (let i = 0; i < key.length; i++) {
-        hashCode = (primeNumber * hashCode + key.charCodeAt(i))%this.bucketSize;
-      }
-     
-      return hashCode;
-    } 
+    let hashCode = 0;
+    const primeNumber = 31;
 
-  set(key,value){
-    const index = this.hash(key);
-    this.buckets[index].add(key, value);
+    for (let i = 0; i < key.length; i++) {
+      hashCode = (primeNumber * hashCode + key.charCodeAt(i)) % this.capacity;
+    }
+
+    return hashCode;
   }
+
+  set(key, value) {
+    const index = this.hash(key);
+    const bucket = this.buckets[index];
+
+    let current = bucket.head;
+    while (current !== null) {
+      if (current.key === key) {
+        current.value = value;
+        return;
+      }
+      current = current.next;
+    }
+
+    bucket.add(key, value);
+    this.size++;
+
+    if (this.size > this.threshold) {
+      this.resize();
+    }
+  }
+
+  resize() {
+    const newCapacity = this.capacity * 2;
+    const newBuckets = new Array(newCapacity).fill().map(() => new LinkedList());
+
+    for (let i = 0; i < this.capacity; i++) {
+      const bucket = this.buckets[i];
+      let current = bucket.head;
+      while (current !== null) {
+        const newIndex = this.hash(current.key) % newCapacity;
+        newBuckets[newIndex].add(current.key, current.value);
+        current = current.next;
+      }
+    }
+
+    this.capacity = newCapacity;
+    this.buckets = newBuckets;
+
+    this.threshold = Math.floor(this.capacity * this.loadFactor);
+  }
+
 
   get(key) {
     const index = this.hash(key);
@@ -113,21 +198,76 @@ class HashMap{
     return false;
   }
 
-  remove(key){
+  remove(key) {
     const index = this.hash(key);
-    this.buckets[index].remove(key);
-    
+    const removed = this.buckets[index].remove(key);
+
+    if (removed) {
+      this.size--;
+
+      if (this.capacity > 1 && this.size < this.threshold / 4) {
+        this.resize();
+      }
+    }
+
+    return removed; 
   }
 
   length(){
-    let count = 0;
-    for(let i = 0; i<this.bucketSize; i++){
-      count += this.buckets[i].size;
-    }
-    return count;
+    return this.size;
   }
 
   clear(){
-    this.buckets = new Array(this.bucketSize).map(() => new LinkedList());
+    this.buckets = new Array(this.capacity).fill().map(() => new LinkedList());
+    this.size = 0;
   }
+
+  keys(){
+    let arrAllKeys = []
+    for(let i = 0; i< this.capacity; i++){
+      let responseKey = this.buckets[i].getKeys();
+      if( responseKey!= false){
+        arrAllKeys = arrAllKeys.concat(responseKey);;
+      }
+    }
+    return arrAllKeys;
+  }
+
+  values(){
+    let arrAllValues = []
+    for(let i = 0; i< this.capacity; i++){
+      let responseValue = this.buckets[i].getValues();
+      if( responseValue!= false){
+        arrAllValues = arrAllValues.concat(responseValue);;
+      }
+    }
+    return arrAllValues;
+  }
+
+  entries(){
+    let arrAllKeysAndValues = []
+    for(let i = 0; i< this.capacity; i++){
+      let responseAll = this.buckets[i].getAll();
+      if( responseAll!= false){
+        arrAllKeysAndValues = arrAllKeysAndValues.concat(responseAll);;
+      }
+    }
+    return arrAllKeysAndValues;
+  }
+
 }
+
+const test = new HashMap(16, 0.75); 
+
+test.set('apple', 'red')
+test.set('banana', 'yellow')
+test.set('carrot', 'orange')
+test.set('dog', 'brown')
+test.set('elephant', 'gray')
+test.set('frog', 'green')
+test.set('grape', 'purple')
+test.set('hat', 'black')
+test.set('ice cream', 'white')
+test.set('jacket', 'blue')
+test.set('kite', 'pink')
+test.set('lion', 'golden')
